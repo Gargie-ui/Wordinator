@@ -1,24 +1,22 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wordinator ✨</title>
 
-  <!-- Tailwind (CDN for now) -->
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Wordinator ✨</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-slate-50 min-h-screen flex items-center justify-center p-6">
 
   <div class="bg-white shadow-xl rounded-2xl p-10 max-w-3xl w-full">
-    
-    <h1 class="text-4xl font-extrabold mb-6">Wordinator ✨</h1>
+    <h1 class="text-4xl font-extrabold mb-6 text-gray-900">Wordinator ✨</h1>
 
     <label class="block text-lg font-medium mb-2">Type a word or sentence:</label>
 
     <div class="flex gap-3">
-      <input
+      <input 
         id="userInput"
         type="text"
         placeholder="e.g. aplpe"
@@ -33,13 +31,13 @@
     </div>
 
     <p class="text-gray-500 mt-3">
-      Tips: Try deliberately misspelling words like "recieve", "aplpe", "occassion" and see suggestions.
+      Tips: Try deliberately misspelling words like "recieve", "aplpe", "occassion"
     </p>
 
-    <div id="result" class="mt-6 text-lg font-medium"></div>
-
+    <div id="result" class="mt-6 text-lg font-medium text-gray-700"></div>
   </div>
 
   <script src="/static/main.js"></script>
 </body>
+
 </html>
