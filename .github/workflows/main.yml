@@ -1,0 +1,15 @@
+name: Keep Hugging Face Space Awake
+
+on:
+  schedule:
+    # This runs every 6 hours (0 */6 * * *)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allows you to run it manually to test
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Heartbeat to Space
+        run: |
+          curl -I https://gigishot-wordinator.hf.space
