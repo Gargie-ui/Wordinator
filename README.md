@@ -27,7 +27,7 @@ A powerful NLP-powered web tool that analyzes and processes text in real time â€
 
 ---
 
-## ðŸ’¡ How It Works
+## How It Works
 
 1. User enters text in the web interface
 2. **SpellChecker** scans for misspelled words and suggests corrections
@@ -38,6 +38,6 @@ A powerful NLP-powered web tool that analyzes and processes text in real time â€
 ---
 ---
 
-## ðŸ“„ License
+## License
 
 This project is open source and available under the [MIT License](LICENSE).
