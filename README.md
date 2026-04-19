@@ -2,6 +2,10 @@
 
 A powerful NLP-powered web tool that analyzes and processes text in real time — combining spell checking, sentiment analysis, fuzzy word matching, and word frequency scoring in one clean interface.
 
+## Demo
+
+**[Try it live](https://gigishot-wordinator.hf.space/)**
+
 ---
 
 ## Features
