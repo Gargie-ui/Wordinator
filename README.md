@@ -36,8 +36,3 @@ A powerful NLP-powered web tool that analyzes and processes text in real time â€
 5. **wordfreq** scores each word by how commonly it appears in real-world language (Zipf scale)
 
 ---
----
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
