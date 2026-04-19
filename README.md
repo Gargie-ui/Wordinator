@@ -4,16 +4,16 @@ A powerful NLP-powered web tool that analyzes and processes text in real time �
 
 ---
 
-## 🚀 Features
+## Features
 
-- 🔤 **Spell Checker** — Detects and suggests corrections for misspelled words
-- 💬 **Sentiment Analysis** — Determines if text is positive, negative, or neutral
-- 🔍 **Fuzzy Word Matching** — Finds near-match words even with typos or partial input
-- 📊 **Word Frequency Scoring** — Ranks words by real-world usage using Zipf scores
+- **Spell Checker** — Detects and suggests corrections for misspelled words
+- **Sentiment Analysis** — Determines if text is positive, negative, or neutral
+- **Fuzzy Word Matching** — Finds near-match words even with typos or partial input
+- **Word Frequency Scoring** — Ranks words by real-world usage using Zipf scores
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -27,52 +27,6 @@ A powerful NLP-powered web tool that analyzes and processes text in real time �
 
 ---
 
-## 📁 Project Structure
-
-```
-Wordinator/
-│
-├── static/               # CSS / JS assets
-├── templates/
-│   └── index.html        # Web UI
-├── nltk_data/            # Local NLTK data
-├── app.py                # Flask app
-└── requirements.txt
-```
-
----
-
-## ⚙️ Setup & Run
-
-```bash
-# 1. Clone the repo
-git clone https://github.com/Gargie-ui/Wordinator
-cd Wordinator
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Run the app
-python app.py
-```
-
-Then open `http://localhost:5000` in your browser.
-
----
-
-## 📦 Requirements
-
-```
-flask
-nltk
-textblob
-pyspellchecker
-rapidfuzz
-wordfreq
-```
-
----
-
 ## 💡 How It Works
 
 1. User enters text in the web interface
@@ -82,13 +36,6 @@ wordfreq
 5. **wordfreq** scores each word by how commonly it appears in real-world language (Zipf scale)
 
 ---
-
-## 👩‍💻 Author
-
-**Gargi Channe**
-- 🔗 [LinkedIn](https://www.linkedin.com/in/gargi-channe)
-- 🐙 [GitHub](https://github.com/Gargie-ui)
-
 ---
 
 ## 📄 License
