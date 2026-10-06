@@ -4,7 +4,7 @@ A powerful NLP-powered web tool that analyzes and processes text in real time â€
 
 ## Demo
 
-**[Try it live](https://gigishot-wordinator.hf.space/)**
+**[Try it live](https://gigishot-wordinator.hf.space)**
 
 ---
 
