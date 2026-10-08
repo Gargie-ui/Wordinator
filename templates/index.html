@@ -1,46 +1,892 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Wordinator ✨</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Wordinator — Contextual Spell Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ── Reset & tokens ───────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0e0e0f;
+  --surface:   #161618;
+  --card:      #1d1d20;
+  --border:    #2a2a2e;
+  --accent:    #4ade80;       /* bright green */
+  --accent2:   #86efac;       /* soft green   */
+  --danger:    #ff6b6b;
+  --agree:     #6bffb8;
+  --text:      #e8e6e0;
+  --muted:     #888;
+  --mono:      'DM Mono', monospace;
+  --serif:     'Playfair Display', serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem 6rem;
+}
+
+/* ── Header ─────────────────────────────── */
+header {
+  width: 100%;
+  max-width: 860px;
+  margin-bottom: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+header h1 {
+  font-family: var(--serif);
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 900;
+  letter-spacing: -.02em;
+  line-height: 1;
+  color: var(--accent);
+}
+header p {
+  font-size: .78rem;
+  color: var(--muted);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.badge {
+  display: inline-block;
+  background: #1a1a1d;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: .68rem;
+  color: var(--accent2);
+  letter-spacing: .08em;
+  margin-left: .6rem;
+  vertical-align: middle;
+}
+
+/* ── Input card ──────────────────────────── */
+.input-card {
+  width: 100%;
+  max-width: 860px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  line-height: 1.7;
+  padding: 1.4rem 1.6rem;
+  resize: vertical;
+  min-height: 130px;
+  caret-color: var(--accent);
+}
+textarea::placeholder { color: #444; }
+.input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1.4rem;
+  border-top: 1px solid var(--border);
+  gap: 1rem;
+}
+#char-count { font-size: .72rem; color: var(--muted); }
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-family: var(--mono);
+  letter-spacing: .06em;
+}
+#analyse-btn {
+  background: var(--accent);
+  color: #111;
+  font-weight: 500;
+  font-size: .82rem;
+  padding: .6rem 1.6rem;
+  border-radius: 6px;
+  transition: opacity .15s, transform .1s;
+  text-transform: uppercase;
+}
+#analyse-btn:hover  { opacity: .88; }
+#analyse-btn:active { transform: scale(.97); }
+#analyse-btn:disabled { opacity: .4; cursor: default; }
+
+/* ── Status bar ──────────────────────────── */
+#status {
+  width: 100%;
+  max-width: 860px;
+  font-size: .76rem;
+  color: var(--muted);
+  margin-bottom: 1.2rem;
+  min-height: 1.2em;
+  transition: color .2s;
+}
+#status.loading { color: var(--accent); }
+#status.done    { color: var(--agree); }
+#status.error   { color: var(--danger); }
+
+/* ── Annotated output ────────────────────── */
+#output {
+  width: 100%;
+  max-width: 860px;
+  display: none;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.section-label {
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .6rem;
+}
+
+/* Corrected text preview */
+#corrected-preview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.2rem 1.5rem;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--text);
+}
+.corrected-word { color: var(--agree); font-weight: 500; }
+
+/* ── Inline annotated text ───────────────── */
+#annotated {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.4rem 1.6rem;
+  font-size: 1rem;
+  line-height: 2.1;
+}
+.word-wrap {
+  display: inline;
+  position: relative;
+}
+.token {
+  display: inline;
+}
+.token.ok { color: var(--text); }
+
+/* Error token styles */
+.token.err {
+  border-bottom: 2px solid;
+  cursor: pointer;
+  border-radius: 2px;
+  padding: 0 1px;
+  transition: background .15s;
+}
+.token.err.agree    { color: var(--agree);  border-color: var(--agree);  }
+.token.err.disagree { color: var(--accent); border-color: var(--accent); }
+.token.err:hover    { background: rgba(255,255,255,.06); }
+
+/* ── Suggestion popup ────────────────────── */
+.popup {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  min-width: 300px;
+  max-width: 380px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.6);
+  font-size: .82rem;
+}
+.popup.open { display: block; }
+.popup-header {
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+  margin-bottom: .8rem;
+  padding-bottom: .6rem;
+  border-bottom: 1px solid var(--border);
+}
+.popup-header .original-word {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+.popup-header .tag {
+  font-size: .65rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Spell vs BERT comparison row */
+.compare-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .6rem;
+  margin-bottom: .9rem;
+}
+.compare-cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: .55rem .75rem;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.compare-cell:hover { border-color: var(--accent); background: #222226; }
+.compare-cell .source-label {
+  font-size: .62rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: .2rem;
+}
+.compare-cell .suggestion-word {
+  font-size: .95rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.compare-cell.spell-cell .suggestion-word { color: var(--accent2); }
+.compare-cell.bert-cell  .suggestion-word { color: var(--accent); }
+.compare-cell.same-cell  { grid-column: 1/-1; }
+.compare-cell.same-cell .suggestion-word { color: var(--agree); }
+
+/* All candidates list */
+.cand-label {
+  font-size: .65rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .4rem;
+}
+.cand-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+.cand-chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: .25rem .75rem;
+  cursor: pointer;
+  color: var(--text);
+  font-size: .78rem;
+  transition: border-color .12s, background .12s;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+}
+.cand-chip:hover { border-color: var(--accent); background: #222226; }
+.cand-chip .chip-score {
+  font-size: .62rem;
+  color: var(--muted);
+}
+.cand-chip.source-both  { border-color: var(--agree);  }
+.cand-chip.source-bert  { border-color: var(--accent); }
+.cand-chip.source-spell { border-color: var(--accent2);}
+
+/* ── Summary strip ───────────────────────── */
+#summary-strip {
+  display: flex;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  font-size: .78rem;
+}
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+.stat .num { font-size: 1.3rem; font-family: var(--serif); color: var(--accent); }
+.stat .lbl { color: var(--muted); font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; }
+
+/* ── Legend ──────────────────────────────── */
+.legend {
+  display: flex;
+  gap: 1.2rem;
+  font-size: .7rem;
+  color: var(--muted);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.legend-item { display: flex; align-items: center; gap: .4rem; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* ── Spinner ─────────────────────────────── */
+.spinner {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border: 2px solid #333;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  margin-right: .5rem;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Score bars ──────────────────────────── */
+.score-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-top: .2rem;
+}
+.score-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width .3s;
+}
+.score-val { font-size: .6rem; color: var(--muted); }
+
+/* ── Processing overlay ──────────────────── */
+#processing-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,10,11,.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+#processing-overlay.active { display: flex; }
+
+/* Neural net canvas */
+#neural-canvas {
+  width: 340px;
+  height: 220px;
+}
+
+/* Phase label */
+.phase-text {
+  font-family: var(--mono);
+  font-size: .82rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  animation: fadepulse 1.4s ease-in-out infinite;
+}
+@keyframes fadepulse {
+  0%,100% { opacity: .5; }
+  50%      { opacity: 1;  }
+}
+
+/* Progress track */
+.progress-track {
+  width: 260px;
+  height: 2px;
+  background: #222;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width .4s ease;
+}
+/* Shimmer sweep on the progress bar */
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -60px;
+  width: 60px; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+  animation: shimmer 1.2s linear infinite;
+}
+@keyframes shimmer { to { left: 320px; } }
+
+</style>
 </head>
+<body>
 
-<body class="bg-blue-100 min-h-screen flex items-center justify-center p-6">
+<!-- Processing overlay -->
+<div id="processing-overlay" role="status" aria-live="polite" aria-label="Analysing text">
+  <canvas id="neural-canvas" width="680" height="440" aria-hidden="true"></canvas>
+  <div class="phase-text" id="phase-label">Tokenising input…</div>
+  <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+</div>
 
-  <div class="bg-white shadow-xl rounded-2xl p-10 max-w-3xl w-full">
-    <h1 class="text-4xl font-extrabold mb-6 text-gray-900">Wordinator ✨</h1>
+<header>
+  <h1>Wordinator <span class="badge">DistilBERT</span></h1>
+  <p>Context-aware spell correction — spell checker + transformer MLM</p>
+</header>
 
-    <label class="block text-lg font-medium mb-2">Type a word or sentence:</label>
+<div class="input-card">
+  <textarea id="input-text" placeholder="Type or paste text here… e.g. 'I want to reed a book tonihgt'"
+            spellcheck="false"></textarea>
+  <div class="input-footer">
+    <span id="char-count">0 characters</span>
+    <button id="analyse-btn">Analyse →</button>
+  </div>
+</div>
 
-    <div class="flex gap-3">
-      <input 
-        id="userInput"
-        type="text"
-        placeholder="e.g. aplpe"
-        class="flex-1 border border-gray-300 rounded-lg p-3 focus:ring focus:ring-blue-300"
-      />
+<div id="status"></div>
 
-      <button
-        onclick="doCheck()"
-        class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
-        Check
-      </button>
-    </div>
+<div id="output">
 
-    <p class="text-gray-500 mt-3">
-      Tips: Try deliberately misspelling words like "recieve", "aplpe", "occassion"
-    </p>
-
-    <div id="result" class="mt-6 text-lg font-medium text-gray-700"></div>
+  <!-- Stats -->
+  <div>
+    <div class="section-label">Summary</div>
+    <div id="summary-strip"></div>
   </div>
 
-  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <!-- Annotated text -->
+  <div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:.6rem;">
+      <div class="section-label" style="margin-bottom:0">Annotated — click an underlined word</div>
+      <div class="legend">
+        <div class="legend-item"><span class="dot" style="background:var(--agree)"></span> corrected (BERT + spell agree)</div>
+        <div class="legend-item"><span class="dot" style="background:var(--accent)"></span> uncertain (they disagree)</div>
+      </div>
+    </div>
+    <div id="annotated"></div>
+  </div>
+
+  <!-- Corrected preview -->
+  <div>
+    <div class="section-label">Best auto-correction</div>
+    <div id="corrected-preview"></div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let currentTokens = [];
+let appliedChoices = {}; // index -> chosen word
+let openPopupIdx = null;
+
+// ── DOM refs ───────────────────────────────────────────────────────
+const inputEl   = document.getElementById("input-text");
+const btnEl     = document.getElementById("analyse-btn");
+const statusEl  = document.getElementById("status");
+const outputEl  = document.getElementById("output");
+const annotated = document.getElementById("annotated");
+const corrected = document.getElementById("corrected-preview");
+const summary   = document.getElementById("summary-strip");
+const charCount = document.getElementById("char-count");
+const overlay   = document.getElementById("processing-overlay");
+const phaseLabel= document.getElementById("phase-label");
+const progressFill = document.getElementById("progress-fill");
+
+// ── Neural net animation ───────────────────────────────────────────
+const canvas = document.getElementById("neural-canvas");
+const ctx    = canvas.getContext("2d");
+const W = canvas.width, H = canvas.height;
+
+// Build 4-layer network: input(5) → hidden1(6) → hidden2(6) → output(3)
+const LAYERS = [5, 6, 6, 3];
+const GOLD  = "#4ade80";
+const BLUE  = "#86efac";
+const DIM   = "rgba(255,255,255,0.08)";
+
+let nodes = [];      // [{x,y,layer,idx}]
+let pulses = [];     // [{fromNode, toNode, t, speed, color}]
+let animFrame = null;
+let animRunning = false;
+
+function buildNodes() {
+  nodes = [];
+  const xPositions = [80, 220, 380, 540, W - 80].slice(0, LAYERS.length);
+  // centre xPositions for 4 layers across W
+  const xs = [W*0.1, W*0.35, W*0.63, W*0.88];
+  LAYERS.forEach((count, li) => {
+    const x = xs[li];
+    const gap = H / (count + 1);
+    for (let i = 0; i < count; i++) {
+      nodes.push({ x, y: gap * (i + 1), layer: li, idx: i });
+    }
+  });
+}
+
+function getLayerNodes(li) { return nodes.filter(n => n.layer === li); }
+
+function drawNetwork(highlightLayer) {
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw edges
+  for (let li = 0; li < LAYERS.length - 1; li++) {
+    const from = getLayerNodes(li);
+    const to   = getLayerNodes(li + 1);
+    from.forEach(f => {
+      to.forEach(t => {
+        ctx.beginPath();
+        ctx.moveTo(f.x, f.y);
+        ctx.lineTo(t.x, t.y);
+        ctx.strokeStyle = DIM;
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      });
+    });
+  }
+
+  // Draw pulses along edges
+  pulses.forEach(p => {
+    const f = p.fromNode, t = p.toNode;
+    const px = f.x + (t.x - f.x) * p.t;
+    const py = f.y + (t.y - f.y) * p.t;
+    // trailing glow line
+    const trailLen = 0.12;
+    const t0 = Math.max(0, p.t - trailLen);
+    const tx0 = f.x + (t.x - f.x) * t0;
+    const ty0 = f.y + (t.y - f.y) * t0;
+    ctx.beginPath();
+    ctx.moveTo(tx0, ty0);
+    ctx.lineTo(px, py);
+    ctx.strokeStyle = p.color === "gold"
+      ? "rgba(74,222,128,0.55)" : "rgba(134,239,172,0.55)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // dot head
+    ctx.beginPath();
+    ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = p.color === "gold" ? GOLD : BLUE;
+    ctx.fill();
+  });
+
+  // Draw nodes
+  nodes.forEach(n => {
+    const active = (n.layer === highlightLayer);
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, active ? 7 : 5, 0, Math.PI * 2);
+    ctx.fillStyle = active ? GOLD : "rgba(255,255,255,0.12)";
+    ctx.fill();
+    if (active) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 11, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(74,222,128,0.25)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  });
+}
+
+function spawnPulse(layer) {
+  const from = getLayerNodes(layer);
+  const to   = getLayerNodes(layer + 1);
+  if (!from.length || !to.length) return;
+  const f = from[Math.floor(Math.random() * from.length)];
+  const t = to  [Math.floor(Math.random() * to.length)];
+  pulses.push({ fromNode: f, toNode: t, t: 0,
+    speed: 0.012 + Math.random() * 0.01,
+    color: Math.random() > 0.4 ? "gold" : "blue" });
+}
+
+let highlightLayer = 0;
+let spawnTimer = 0;
+
+function animStep() {
+  if (!animRunning) return;
+
+  // Advance pulses
+  pulses = pulses.filter(p => p.t < 1.05);
+  pulses.forEach(p => { p.t += p.speed; });
+
+  // Spawn new ones
+  spawnTimer++;
+  if (spawnTimer % 8 === 0) {
+    spawnPulse(highlightLayer % (LAYERS.length - 1));
+    if (Math.random() > 0.5) spawnPulse((highlightLayer + 1) % (LAYERS.length - 1));
+  }
+
+  // Cycle active layer slowly
+  if (spawnTimer % 60 === 0) highlightLayer = (highlightLayer + 1) % LAYERS.length;
+
+  drawNetwork(highlightLayer);
+  animFrame = requestAnimationFrame(animStep);
+}
+
+function startAnim() {
+  buildNodes();
+  pulses = []; spawnTimer = 0; highlightLayer = 0;
+  animRunning = true;
+  animStep();
+}
+
+function stopAnim() {
+  animRunning = false;
+  if (animFrame) cancelAnimationFrame(animFrame);
+  ctx.clearRect(0, 0, W, H);
+}
+
+// ── Processing overlay helpers ─────────────────────────────────────
+const PHASES = [
+  { label: "Tokenising input…",          pct: 12 },
+  { label: "Checking spelling…",         pct: 30 },
+  { label: "Building masked sentences…", pct: 52 },
+  { label: "Running DistilBERT MLM…",    pct: 74 },
+  { label: "Scoring & re-ranking…",      pct: 90 },
+];
+let phaseInterval = null;
+
+function showOverlay() {
+  overlay.classList.add("active");
+  startAnim();
+  let i = 0;
+  setPhase(PHASES[0]);
+  phaseInterval = setInterval(() => {
+    i = Math.min(i + 1, PHASES.length - 1);
+    setPhase(PHASES[i]);
+  }, 900);
+}
+
+function hideOverlay() {
+  clearInterval(phaseInterval);
+  progressFill.style.width = "100%";
+  setTimeout(() => {
+    overlay.classList.remove("active");
+    stopAnim();
+    progressFill.style.width = "0%";
+  }, 350);
+}
+
+function setPhase(phase) {
+  phaseLabel.textContent = phase.label;
+  progressFill.style.width = phase.pct + "%";
+}
+
+// ── Input counter ──────────────────────────────────────────────────
+inputEl.addEventListener("input", () => {
+  charCount.textContent = `${inputEl.value.length} characters`;
+});
+
+// ── Close popups on outside click ─────────────────────────────────
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".word-wrap")) closeAllPopups();
+});
+
+// ── Analyse ────────────────────────────────────────────────────────
+btnEl.addEventListener("click", analyse);
+inputEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) analyse();
+});
+
+async function analyse() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+
+  btnEl.disabled = true;
+  outputEl.style.display = "none";
+  appliedChoices = {};
+  showOverlay();
+  setStatus("loading", "");
+
+  try {
+    const base = window.location.origin;
+    const res  = await fetch(`${base}/api/correct`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ text })
+    });
+
+    // Guard: if server returned HTML (crash page), surface it clearly
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      const raw = await res.text();
+      throw new Error(`Server error (${res.status}) — check Logs tab. Preview: ${raw.slice(0,120)}`);
+    }
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    currentTokens = data.tokens;
+    renderSummary(data);
+    renderAnnotated(data.tokens);
+    renderCorrected(data.tokens);
+
+    hideOverlay();
+    outputEl.style.display = "flex";
+    setStatus("done", `✓ ${data.error_count} issue(s) found — ${data.disagreements} disagreement(s) between BERT and spell checker`);
+  } catch (err) {
+    hideOverlay();
+    setStatus("error", `Error: ${err.message}`);
+  } finally {
+    btnEl.disabled = false;
+  }
+}
+
+// ── Render helpers ─────────────────────────────────────────────────
+function setStatus(cls, html) {
+  statusEl.className = cls;
+  statusEl.innerHTML = html;
+}
+
+function renderSummary(data) {
+  const errTokens = data.tokens.filter(t => t.is_error);
+  const agrees    = errTokens.filter(t => t.agree).length;
+  const disagrees = errTokens.filter(t => !t.agree).length;
+
+  summary.innerHTML = `
+    <div class="stat"><span class="num">${data.tokens.length}</span><span class="lbl">Total words</span></div>
+    <div class="stat"><span class="num">${data.error_count}</span><span class="lbl">Errors found</span></div>
+    <div class="stat"><span class="num" style="color:var(--agree)">${agrees}</span><span class="lbl">BERT + spell agree</span></div>
+    <div class="stat"><span class="num" style="color:var(--accent)">${disagrees}</span><span class="lbl">Disagreements</span></div>
+  `;
+}
+
+function renderAnnotated(tokens) {
+  annotated.innerHTML = "";
+  tokens.forEach((tok, idx) => {
+    const space = idx > 0 ? " " : "";
+
+    if (!tok.is_error) {
+      annotated.insertAdjacentHTML("beforeend",
+        `<span class="token ok">${space}${escHtml(tok.original)}</span>`);
+      return;
+    }
+
+    const cls = tok.agree ? "agree" : "disagree";
+    const wrap = document.createElement("span");
+    wrap.className = "word-wrap";
+    wrap.style.position = "relative";
+
+    wrap.innerHTML = `
+      <span class="token err ${cls}" data-idx="${idx}">${space}${escHtml(tok.original)}</span>
+      ${buildPopup(tok, idx)}
+    `;
+    annotated.appendChild(wrap);
+
+    wrap.querySelector(`.token.err`).addEventListener("click", (e) => {
+      e.stopPropagation();
+      togglePopup(idx);
+    });
+
+    // chip / compare-cell click handlers
+    wrap.querySelectorAll("[data-apply]").forEach(el => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        applyChoice(idx, el.dataset.apply);
+      });
+    });
+  });
+}
+
+function buildPopup(tok, idx) {
+  const sameWord = tok.spell_suggestion === tok.bert_suggestion;
+
+  let compareHTML;
+  if (sameWord) {
+    compareHTML = `
+      <div class="compare-row">
+        <div class="compare-cell same-cell" data-apply="${escAttr(tok.combined_suggestion)}">
+          <div class="source-label">Both agree</div>
+          <div class="suggestion-word">${escHtml(tok.combined_suggestion)}</div>
+        </div>
+      </div>`;
+  } else {
+    compareHTML = `
+      <div class="compare-row">
+        <div class="compare-cell spell-cell" data-apply="${escAttr(tok.spell_suggestion)}">
+          <div class="source-label">Spell checker</div>
+          <div class="suggestion-word">${escHtml(tok.spell_suggestion)}</div>
+        </div>
+        <div class="compare-cell bert-cell" data-apply="${escAttr(tok.bert_suggestion)}">
+          <div class="source-label">BERT context</div>
+          <div class="suggestion-word">${escHtml(tok.bert_suggestion)}</div>
+        </div>
+      </div>`;
+  }
+
+  const chips = (tok.candidates || []).map(c => {
+    const pct = Math.round(c.combined_score * 100);
+    return `
+      <div class="cand-chip source-${c.source}" data-apply="${escAttr(c.word)}">
+        ${escHtml(c.word)}
+        <span class="chip-score">${pct}%</span>
+      </div>`;
+  }).join("");
+
+  return `
+    <div class="popup" id="popup-${idx}">
+      <div class="popup-header">
+        <span class="original-word">${escHtml(tok.original)}</span>
+        <span class="tag">${sameWord ? "✓ consensus" : "⚡ disagreement"}</span>
+      </div>
+      ${compareHTML}
+      <div class="cand-label">All candidates</div>
+      <div class="cand-list">${chips}</div>
+    </div>`;
+}
+
+function renderCorrected(tokens) {
+  const parts = tokens.map(tok => {
+    if (!tok.is_error) return escHtml(tok.original);
+    const chosen = appliedChoices[currentTokens.indexOf(tok)] || tok.combined_suggestion || tok.original;
+    return `<span class="corrected-word">${escHtml(chosen)}</span>`;
+  });
+  corrected.innerHTML = parts.join(" ");
+}
+
+// ── Popup toggle ───────────────────────────────────────────────────
+function togglePopup(idx) {
+  if (openPopupIdx === idx) { closeAllPopups(); return; }
+  closeAllPopups();
+  const popup = document.getElementById(`popup-${idx}`);
+  if (popup) { popup.classList.add("open"); openPopupIdx = idx; }
+}
+
+function closeAllPopups() {
+  document.querySelectorAll(".popup.open").forEach(p => p.classList.remove("open"));
+  openPopupIdx = null;
+}
+
+// ── Apply a choice ─────────────────────────────────────────────────
+function applyChoice(idx, word) {
+  appliedChoices[idx] = word;
+  closeAllPopups();
+
+  // Update the token span text (keep spacing)
+  const tokenEl = document.querySelector(`.token.err[data-idx="${idx}"]`);
+  if (tokenEl) {
+    const space = idx > 0 ? " " : "";
+    tokenEl.textContent = space + word;
+    tokenEl.classList.remove("agree", "disagree");
+    tokenEl.classList.add("agree");
+  }
+
+  // Re-render corrected preview
+  renderCorrected(currentTokens);
+}
+
+// ── Utilities ──────────────────────────────────────────────────────
+function escHtml(str = "") {
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+                    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function escAttr(str = "") { return escHtml(str); }
+</script>
 </body>
-
 </html>
-
-
-
